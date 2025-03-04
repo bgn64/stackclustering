@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "ClusteringPlugin": {
+      "commandName": "Executable",
+      "executablePath": "C:\\Users\\benjaming\\source\\repos\\WPA_FOR_XPERF\\analyzer\\wpa\\internal\\bin\\x64\\Debug\\net8.0-windows\\win-x64\\wpa.exe",
+      "commandLineArgs": "-nodefault -addsearchdir \"C:\\Users\\benjaming\\source\\repos\\Clustering\\ClusteringPlugin\\bin\\Debug\\net5.0\""
+    }
+  }
+}
