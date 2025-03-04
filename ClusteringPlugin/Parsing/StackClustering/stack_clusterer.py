@@ -1,6 +1,6 @@
 import json
 import sys
-from sklearn.cluster import KMeans
+from sklearn.cluster import KMeans, AffinityPropagation
 from sklearn import metrics
 import numpy as np
 
@@ -60,6 +60,7 @@ def vectorize_stacks(stacks):
 
 # Constants for clustering implementations
 OCCURRENCE_KMEANS = "occurrence_kmeans"
+OCCURRENCE_AP = "occurrence_ap"
 
 # Function to perform K-means clustering
 def occurrence_kmeans_clustering(stacks):
@@ -74,10 +75,25 @@ def occurrence_kmeans_clustering(stacks):
         labels=kmeans.labels_.tolist()
     )
 
+# Function to perform AP clustering
+def occurrence_ap_clustering(stacks):
+    vectors, distinct_frames = vectorize_stacks(stacks)
+    
+    # Perform Affinity Propagation clustering with preference value -10
+    ap = AffinityPropagation(preference=-10, random_state=0).fit(vectors)
+    
+    return ClusterResult(
+        n_clusters=len(ap.cluster_centers_indices_),
+        silhouette_score=metrics.silhouette_score(vectors, ap.labels_, metric="euclidean"),
+        labels=ap.labels_.tolist()
+    )
+
 # Function to perform clustering based on the selected implementation
 def perform_clustering(stacks, method):
     if method == OCCURRENCE_KMEANS:
         return occurrence_kmeans_clustering(stacks)
+    elif method == OCCURRENCE_AP:
+        return occurrence_ap_clustering(stacks)
     elif method == "other_method_1":
         # Placeholder for another clustering method implementation
         return ClusterResult(
@@ -96,10 +112,6 @@ def perform_clustering(stacks, method):
         raise ValueError(f"Unknown clustering method: {method}")
 
 if __name__ == "__main__":
-    # Read file path and clustering method from command line arguments
-    #input_arg = sys.argv[1]
-    #file_path, clustering_method = input_arg.rsplit(' ', 1)
-
     # Read file path and clustering method from command line arguments
     file_path = sys.argv[1]
     clustering_method = sys.argv[2]

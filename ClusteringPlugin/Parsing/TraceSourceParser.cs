@@ -76,7 +76,7 @@ namespace ClusteringPlugin.Parsing
                 new TextCleaner());
             IStringClusterer stringClusterer = new APStringClusterer(-10);
             IStackClusterer stackClusterer = new StackClusterer(stackPreprocessor, stringClusterer);*/
-            IStackClusterer stackClusterer = new OccurrenceKMeansClusterer();
+            IStackClusterer stackClusterer = new OccurrenceAPClusterer();
 
             ClusterResult result = stackClusterer.ClusterStacks(stacks);
 
