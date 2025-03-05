@@ -76,9 +76,9 @@ class TextCleaner:
         # Convert to lowercase
         cleaned = text.lower()
         # Remove punctuation
-        cleaned = re.sub(r'[^\\w\\s]', '', cleaned)
+        cleaned = re.sub(r'[^\w\s]', '', cleaned)
         # Trim extra spaces
-        cleaned = re.sub(r'\\s+', ' ', cleaned).strip()
+        cleaned = re.sub(r'\s+', ' ', cleaned).strip()
         # Remove stop words
         cleaned = ' '.join(word for word in cleaned.split() if word not in TextCleaner.StopWords)
         return cleaned
@@ -173,6 +173,9 @@ def keyword_ap_clustering(stacks):
     
     # Preprocess stacks using keywords from LLM and cache results
     preprocessed_stacks = preprocess_stacks_with_keywords(stacks, cache)
+
+    output_file_path = "C:\\Users\\benjaming\\Downloads\\bad.json"
+    write_preprocessed_stacks_to_file(preprocessed_stacks, output_file_path)
     
     # Save updated cache to file
     with open(cache_file_path, 'w') as cache_file:
@@ -190,6 +193,10 @@ def keyword_ap_clustering(stacks):
         silhouette_score=metrics.silhouette_score(X, ap.labels_, metric="euclidean"),
         labels=ap.labels_.tolist()
     )
+
+def write_preprocessed_stacks_to_file(preprocessed_stacks, file_path):
+    with open(file_path, 'w') as file:
+        json.dump(preprocessed_stacks, file, indent=4)
 
 # Function to perform clustering based on the selected implementation
 def perform_clustering(stacks, method):
@@ -217,7 +224,7 @@ def perform_clustering(stacks, method):
         raise ValueError(f"Unknown clustering method: {method}")
 
 if __name__ == "__main__":
-    #  C:\Users\benjaming\Documents\sample_input.txt keywords_ap
+    #  C:\Users\benjaming\Downloads\bad_input.txt keyword_ap
     # Read file path and clustering method from command line arguments
     #input_arg = sys.argv[1]
     
