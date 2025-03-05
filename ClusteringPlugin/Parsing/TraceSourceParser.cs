@@ -7,23 +7,15 @@ using System.Collections.Generic;
 using System;
 using System.Threading;
 using Microsoft.Performance.SDK;
-using Azure.AI.OpenAI;
 using ClusteringPlugin.StackClustering;
-using ClusteringPlugin.StackPreprocessing.FunctionDescriptions;
-using ClusteringPlugin.StackPreprocessing;
 using ClusteringPlugin.Stacks;
 using System.ClientModel;
-using System.Linq;
 
 namespace ClusteringPlugin.Parsing
 {
     public sealed class TraceSourceParser
         : SourceParser<Event, ParsingContext, Type>
     {
-        static readonly Uri AzureEndpoint = new Uri("https://8045fa23-b507-4dfd-9426-2c0e323faf8c.openai.azure.com/");
-        static readonly string FileCache = @"C:\Users\benjaming\source\repos\Clustering\ClusteringPlugin\Parsing\StackPreprocesing\FunctionDescriptions\cache.txt";
-        static readonly ApiKeyCredential Credential = new ApiKeyCredential("");
-
         private ParsingContext context;
         private IEnumerable<IDataSource> dataSources;
         private DataSourceInfo? dataSourceInfo;
@@ -76,7 +68,7 @@ namespace ClusteringPlugin.Parsing
                 new TextCleaner());
             IStringClusterer stringClusterer = new APStringClusterer(-10);
             IStackClusterer stackClusterer = new StackClusterer(stackPreprocessor, stringClusterer);*/
-            IStackClusterer stackClusterer = new OccurrenceAPClusterer();
+            IStackClusterer stackClusterer = new KeywordAPClusterer();
 
             ClusterResult result = stackClusterer.ClusterStacks(stacks);
 

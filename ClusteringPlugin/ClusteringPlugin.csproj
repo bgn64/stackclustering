@@ -13,10 +13,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Parsing\StackClustering\stack_clusterer.py">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    <None Update="keyword_cache.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Parsing\StackClustering\ap_clustering.py">
+    <None Update="Parsing\StackClustering\stack_clusterer.py">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>

@@ -1,8 +1,12 @@
 import json
 import sys
 from sklearn.cluster import KMeans, AffinityPropagation
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn import metrics
 import numpy as np
+import os
+import openai
+import re
 
 # Define the custom classes based on the provided structure
 class StackFrame:
@@ -58,9 +62,77 @@ def vectorize_stacks(stacks):
     
     return np.array(vectors), distinct_frames
 
+# TextCleaner class based on the provided C# code
+class TextCleaner:
+    StopWords = {
+        "a", "an", "and", "are", "as", "at", "be", "but", "by",
+        "for", "if", "in", "into", "is", "it", "no", "not", "of",
+        "on", "or", "such", "that", "the", "their", "then", "there",
+        "these", "they", "this", "to", "was", "will", "with"
+    }
+
+    @staticmethod
+    def clean_text(text):
+        # Convert to lowercase
+        cleaned = text.lower()
+        # Remove punctuation
+        cleaned = re.sub(r'[^\\w\\s]', '', cleaned)
+        # Trim extra spaces
+        cleaned = re.sub(r'\\s+', ' ', cleaned).strip()
+        # Remove stop words
+        cleaned = ' '.join(word for word in cleaned.split() if word not in TextCleaner.StopWords)
+        return cleaned
+
+# Function to get keywords from Azure LLM and cache results
+def get_keywords_from_llm(stack_frame, cache):
+    if not stack_frame.Module or not stack_frame.Function:
+        return ""
+    
+    key = f"{stack_frame.Module}!{stack_frame.Function}"
+    
+    if key in cache:
+        return cache[key]
+    
+    # Throw an exception indicating which stack_frame was not found in cache
+    raise KeyError(f"Stack frame not found in cache: Module='{stack_frame.Module}', Function='{stack_frame.Function}', Key='{key}', Cache='{cache}'") 
+    
+    # Call Azure LLM to get keywords (using OpenAI as an example)
+    response = openai.Completion.create(
+        engine="text-davinci-003",
+        prompt=f"Provide a response consisting of 5 or less key words that describe the purpose of the function '{stack_frame.Function}' from the module '{stack_frame.Module}'.",
+        max_tokens=50,
+        n=1,
+        stop=None,
+        temperature=0.5,
+    )
+    
+    keywords = response.choices[0].text.strip()
+    
+    # Cache the result
+    cache[key] = keywords
+    
+    return keywords
+
+# Function to preprocess stacks using keywords from LLM and cache results
+def preprocess_stacks_with_keywords(stacks, cache):
+    preprocessed_stacks = []
+    
+    for stack in stacks:
+        keywords_list = []
+        
+        for frame in stack.Frames:
+            keywords = get_keywords_from_llm(frame, cache)
+            keywords_list.append(keywords)
+        
+        preprocessed_stack_text = TextCleaner.clean_text(" ".join(keywords_list))
+        preprocessed_stacks.append(preprocessed_stack_text)
+    
+    return preprocessed_stacks
+
 # Constants for clustering implementations
 OCCURRENCE_KMEANS = "occurrence_kmeans"
 OCCURRENCE_AP = "occurrence_ap"
+KEYWORD_AP = "keyword_ap"
 
 # Function to perform K-means clustering
 def occurrence_kmeans_clustering(stacks):
@@ -88,12 +160,45 @@ def occurrence_ap_clustering(stacks):
         labels=ap.labels_.tolist()
     )
 
+# Function to perform keyword-based AP clustering
+def keyword_ap_clustering(stacks):
+    # Load cache from file if it exists
+    cache_file_path = "keyword_cache.json"
+    
+    if os.path.exists(cache_file_path):
+        with open(cache_file_path, 'r') as cache_file:
+            cache = json.load(cache_file)
+    else:
+        cache = {}
+    
+    # Preprocess stacks using keywords from LLM and cache results
+    preprocessed_stacks = preprocess_stacks_with_keywords(stacks, cache)
+    
+    # Save updated cache to file
+    with open(cache_file_path, 'w') as cache_file:
+        json.dump(cache, cache_file)
+    
+    # Convert the text data into TF-IDF features
+    vectorizer = TfidfVectorizer(stop_words='english')
+    X = vectorizer.fit_transform(preprocessed_stacks)
+    
+    # Perform Affinity Propagation clustering with preference value -10
+    ap = AffinityPropagation(preference=-10, random_state=0).fit(X)
+    
+    return ClusterResult(
+        n_clusters=len(ap.cluster_centers_indices_),
+        silhouette_score=metrics.silhouette_score(X, ap.labels_, metric="euclidean"),
+        labels=ap.labels_.tolist()
+    )
+
 # Function to perform clustering based on the selected implementation
 def perform_clustering(stacks, method):
     if method == OCCURRENCE_KMEANS:
         return occurrence_kmeans_clustering(stacks)
     elif method == OCCURRENCE_AP:
         return occurrence_ap_clustering(stacks)
+    elif method == KEYWORD_AP:
+        return keyword_ap_clustering(stacks)
     elif method == "other_method_1":
         # Placeholder for another clustering method implementation
         return ClusterResult(
@@ -112,6 +217,13 @@ def perform_clustering(stacks, method):
         raise ValueError(f"Unknown clustering method: {method}")
 
 if __name__ == "__main__":
+    #  C:\Users\benjaming\Documents\sample_input.txt keywords_ap
+    # Read file path and clustering method from command line arguments
+    #input_arg = sys.argv[1]
+    
+    # Split the input argument into file path and clustering method using rsplit(' ', 1)
+    #file_path, clustering_method = input_arg.rsplit(' ', 1)
+
     # Read file path and clustering method from command line arguments
     file_path = sys.argv[1]
     clustering_method = sys.argv[2]

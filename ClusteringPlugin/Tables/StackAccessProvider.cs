@@ -72,14 +72,7 @@ namespace ClusteringPlugin.AccessProviders
 
             if (index >= count)
             {
-                frame = collection.Frames[0];
-
-                if (frame == null)
-                {
-                    return "NA!NA";
-                }
-
-                return $"{frame.Module}!{frame.Function}";
+                return PastEndValue;
             }
 
             frame = collection.Frames[count - (index + 1)];
